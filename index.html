@@ -1,1 +1,297 @@
-initial
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediaLite — Local Media Compressor</title>
+  <meta name="description" content="Kompresi foto dan video resolusi tinggi dari kamera profesional tanpa kehilangan kualitas signifikan. Berjalan 100% lokal di browser Anda." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Background FX -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="32" height="32" rx="10" fill="url(#logoGrad)"/>
+          <path d="M8 12L16 8L24 12V20L16 24L8 20V12Z" stroke="white" stroke-width="1.5" fill="none"/>
+          <circle cx="16" cy="16" r="3" fill="white"/>
+          <defs>
+            <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32">
+              <stop offset="0%" stop-color="#7c3aed"/>
+              <stop offset="100%" stop-color="#2563eb"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span>Media<strong>Lite</strong></span>
+      </div>
+      <nav class="header-nav" aria-label="Mode kompresi">
+        <button class="tab-btn active" id="tab-image" data-tab="image" aria-selected="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Image
+        </button>
+        <button class="tab-btn" id="tab-video" data-tab="video" aria-selected="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          Video
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Hero Text -->
+      <section class="hero" aria-labelledby="hero-heading">
+        <h1 id="hero-heading">Compress. <span class="gradient-text">Without Compromise.</span></h1>
+        <p class="hero-sub">Kompresi foto &amp; video dari kamera profesional langsung di browser — 100% lokal, tanpa upload ke server.</p>
+      </section>
+
+      <!-- IMAGE PANEL -->
+      <section id="panel-image" class="tab-panel active" aria-labelledby="tab-image">
+        
+        <div class="dropzone" id="image-dropzone" role="button" tabindex="0" aria-label="Klik atau drag gambar ke sini">
+          <div class="dropzone-inner">
+            <div class="drop-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <p class="drop-title">Drag &amp; drop gambar di sini</p>
+            <p class="drop-sub">atau <span class="drop-link">browse file</span></p>
+            <p class="drop-hint">JPG, PNG, WEBP, HEIC &mdash; maks. 50MB per file</p>
+          </div>
+          <input type="file" id="image-input" accept="image/*" multiple hidden aria-label="Pilih file gambar" />
+        </div>
+
+        <div class="settings-card" id="image-settings">
+          <h2 class="settings-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            Pengaturan Kompresi
+          </h2>
+          <div class="settings-grid">
+
+            <div class="setting-item">
+              <label for="img-format" class="setting-label">Format Output</label>
+              <select id="img-format" class="setting-select">
+                <option value="webp">WebP (Terbaik untuk Web)</option>
+                <option value="jpeg">JPEG</option>
+                <option value="png">PNG (Lossless)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="img-quality" class="setting-label">
+                Kualitas
+                <span class="setting-value" id="img-quality-val">82%</span>
+              </label>
+              <div class="slider-wrap">
+                <input type="range" id="img-quality" class="slider" min="10" max="100" value="82" />
+                <div class="slider-track-fill" id="img-quality-fill" style="width:75.56%"></div>
+              </div>
+              <div class="slider-labels"><span>Kecil</span><span>Besar</span></div>
+            </div>
+
+            <div class="setting-item">
+              <label for="img-max-width" class="setting-label">Maks. Lebar (px)</label>
+              <select id="img-max-width" class="setting-select">
+                <option value="0">Original (tanpa resize)</option>
+                <option value="3840">4K — 3840px</option>
+                <option value="2560">2.5K — 2560px</option>
+                <option value="1920" selected>Full HD — 1920px</option>
+                <option value="1280">HD — 1280px</option>
+                <option value="800">Web — 800px</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label class="setting-label">Opsi Tambahan</label>
+              <div class="toggle-group">
+                <label class="toggle-item" for="img-strip-exif">
+                  <input type="checkbox" id="img-strip-exif" class="toggle-checkbox" checked />
+                  <span class="toggle-knob"></span>
+                  <span>Hapus EXIF (privasi)</span>
+                </label>
+                <label class="toggle-item" for="img-progressive">
+                  <input type="checkbox" id="img-progressive" class="toggle-checkbox" checked />
+                  <span class="toggle-knob"></span>
+                  <span>Progressive Loading</span>
+                </label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="queue-section" id="image-queue-section" hidden>
+          <div class="queue-header">
+            <h2 class="queue-title">Antrian File <span class="queue-count badge" id="img-queue-count">0</span></h2>
+            <div class="queue-actions">
+              <button class="btn btn-ghost btn-sm" id="img-clear-all">Hapus Semua</button>
+              <button class="btn btn-primary" id="img-compress-all">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Kompres Semua
+              </button>
+            </div>
+          </div>
+          <div class="file-list" id="image-file-list" role="list" aria-label="Daftar file gambar"></div>
+        </div>
+
+      </section>
+
+      <!-- VIDEO PANEL -->
+      <section id="panel-video" class="tab-panel" aria-labelledby="tab-video" hidden>
+
+        <div class="ffmpeg-status" id="ffmpeg-status">
+          <div class="ffmpeg-indicator" id="ffmpeg-indicator" aria-live="polite">
+            <span class="spinner"></span>
+            <span id="ffmpeg-status-text">Memuat FFmpeg engine...</span>
+          </div>
+        </div>
+
+        <div class="dropzone" id="video-dropzone" role="button" tabindex="0" aria-label="Klik atau drag video ke sini">
+          <div class="dropzone-inner">
+            <div class="drop-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            </div>
+            <p class="drop-title">Drag &amp; drop video di sini</p>
+            <p class="drop-sub">atau <span class="drop-link">browse file</span></p>
+            <p class="drop-hint">MP4, MOV, MKV, AVI, M4V &mdash; maks. 2GB per file</p>
+          </div>
+          <input type="file" id="video-input" accept="video/*" multiple hidden aria-label="Pilih file video" />
+        </div>
+
+        <div class="settings-card" id="video-settings">
+          <h2 class="settings-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            Pengaturan Kompresi Video
+          </h2>
+          <div class="settings-grid">
+
+            <div class="setting-item">
+              <label for="vid-codec" class="setting-label">Codec / Format</label>
+              <select id="vid-codec" class="setting-select">
+                <option value="libx264">H.264 / MP4 (Kompatibilitas Luas)</option>
+                <option value="libx265">H.265 / HEVC (50% lebih kecil)</option>
+                <option value="libvpx-vp9">VP9 / WebM (Optimal Web)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="vid-crf" class="setting-label">
+                Kualitas (CRF)
+                <span class="setting-value" id="vid-crf-val">23</span>
+              </label>
+              <div class="slider-wrap">
+                <input type="range" id="vid-crf" class="slider" min="0" max="51" value="23" />
+                <div class="slider-track-fill" id="vid-crf-fill" style="width:45.1%"></div>
+              </div>
+              <div class="slider-labels"><span>Kualitas Tinggi</span><span>File Kecil</span></div>
+            </div>
+
+            <div class="setting-item">
+              <label for="vid-resolution" class="setting-label">Resolusi Output</label>
+              <select id="vid-resolution" class="setting-select">
+                <option value="">Original (tanpa resize)</option>
+                <option value="3840:-2">4K — 3840px lebar</option>
+                <option value="2560:-2">2.5K — 2560px lebar</option>
+                <option value="1920:-2" selected>Full HD — 1920px</option>
+                <option value="1280:-2">HD — 1280px</option>
+                <option value="854:-2">480p</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="vid-fps" class="setting-label">Frame Rate</label>
+              <select id="vid-fps" class="setting-select">
+                <option value="">Original FPS</option>
+                <option value="60">60 FPS</option>
+                <option value="30" selected>30 FPS</option>
+                <option value="24">24 FPS (Sinematic)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="vid-audio" class="setting-label">Audio</label>
+              <select id="vid-audio" class="setting-select">
+                <option value="aac-128k">AAC 128kbps</option>
+                <option value="aac-192k">AAC 192kbps</option>
+                <option value="copy">Pertahankan Original</option>
+                <option value="strip">Hapus Audio</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="vid-preset" class="setting-label">Preset Kecepatan</label>
+              <select id="vid-preset" class="setting-select">
+                <option value="ultrafast">Ultra Cepat (kualitas rendah)</option>
+                <option value="fast">Cepat</option>
+                <option value="medium" selected>Sedang (rekomendasi)</option>
+                <option value="slow">Lambat (kualitas baik)</option>
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="queue-section" id="video-queue-section" hidden>
+          <div class="queue-header">
+            <h2 class="queue-title">Antrian File <span class="queue-count badge" id="vid-queue-count">0</span></h2>
+            <div class="queue-actions">
+              <button class="btn btn-ghost btn-sm" id="vid-clear-all">Hapus Semua</button>
+              <button class="btn btn-primary" id="vid-compress-all">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Kompres Semua
+              </button>
+            </div>
+          </div>
+          <div class="file-list" id="video-file-list" role="list" aria-label="Daftar file video"></div>
+        </div>
+
+      </section>
+
+      <!-- Stats Banner -->
+      <div class="stats-banner" id="stats-banner" hidden>
+        <div class="stat-item">
+          <span class="stat-val" id="stat-files">0</span>
+          <span class="stat-label">File Diproses</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-val" id="stat-saved">0 MB</span>
+          <span class="stat-label">Total Dihemat</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-val" id="stat-ratio">0%</span>
+          <span class="stat-label">Rata-rata Pengurangan</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&#128274; Semua file diproses <strong>100% di browser</strong> &mdash; tidak ada yang dikirim ke server.</p>
+    </div>
+  </footer>
+
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- FFmpeg.wasm (disimpan lokal di vendor/, tidak butuh internet) -->
+  <script src="vendor/ffmpeg.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/image-compressor.js"></script>
+  <script src="js/video-compressor.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
