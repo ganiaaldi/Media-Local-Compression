@@ -1,28 +1,29 @@
 /**
  * video-compressor.js
  * Handles video compression using FFmpeg.wasm (runs 100% in browser).
+ * Features: rename, ID prefix, portrait/landscape detection, batch download.
  *
  * Semua file FFmpeg disimpan lokal di folder vendor/ — tidak butuh internet.
- * File yang dibutuhkan (sudah termasuk dalam paket):
- *   vendor/ffmpeg.js          ← library JS (dimuat via <script> di index.html)
- *   vendor/ffmpeg-core.js     ← core engine
- *   vendor/ffmpeg-core.wasm   ← binary WASM ~30MB
  */
 
 const VideoCompressor = (() => {
-  let ffmpeg = null;
+  let ffmpeg      = null;
   let ffmpegReady = false;
 
-  /** @type {Map<string, {file: File, id: string, status: string, resultBlob?: Blob}>} */
+  /**
+   * Queue entry shape:
+   * { file, id, status, resultBlob?, orientation?, outputFilename?, seq }
+   * @type {Map<string, object>}
+   */
   const queue = new Map();
 
-  let totalOriginalBytes = 0;
+  let seqCounter          = 0;
+  let totalOriginalBytes  = 0;
   let totalCompressedBytes = 0;
-  let processedCount = 0;
+  let processedCount      = 0;
 
   /**
-   * Load FFmpeg.wasm dari file lokal (vendor/)
-   * Tidak memerlukan koneksi internet.
+   * Load FFmpeg.wasm from local vendor/
    */
   async function loadFFmpeg() {
     const indicator  = document.getElementById('ffmpeg-indicator');
@@ -37,8 +38,6 @@ const VideoCompressor = (() => {
       }
 
       const { createFFmpeg } = FFmpeg;
-
-      // Resolve base URL dari lokasi halaman saat ini
       const base = window.location.origin +
                    window.location.pathname.replace(/\/[^/]*$/, '');
 
@@ -55,7 +54,7 @@ const VideoCompressor = (() => {
       indicator.className = 'ffmpeg-indicator ready';
       indicator.innerHTML = `
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        <span>FFmpeg siap &mdash; kompresi video tersedia (100% offline)</span>
+        <span>FFmpeg siap. Kompresi video tersedia (100% offline)</span>
       `;
       showToast('FFmpeg engine berhasil dimuat!', 'success');
 
@@ -85,14 +84,72 @@ const VideoCompressor = (() => {
         return;
       }
       const id = uid();
-      queue.set(id, { file, id, status: 'pending' });
-      listEl.appendChild(createFileItem(id, file));
+      seqCounter++;
+      queue.set(id, { file, id, status: 'pending', seq: seqCounter, orientation: null });
+      const itemEl = createFileItem(id, file);
+      listEl.appendChild(itemEl);
+
+      // Detect video orientation
+      detectVideoOrientationForItem(id, file);
     });
 
     if (queue.size > 0) {
       section.hidden = false;
       updateQueueCount();
+      updateBatchDownloadBtn();
     }
+  }
+
+  /**
+   * Detect video orientation and update badge
+   */
+  function detectVideoOrientationForItem(id, file) {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.preload = 'metadata';
+    const url = URL.createObjectURL(file);
+    video.src = url;
+
+    detectVideoOrientation(video).then(orientation => {
+      URL.revokeObjectURL(url);
+      const entry = queue.get(id);
+      if (entry) entry.orientation = orientation;
+
+      const badge = document.getElementById(`vid-orient-${id}`);
+      if (badge) {
+        badge.textContent  = orientation === 'P' ? 'Portrait' : orientation === 'L' ? 'Landscape' : 'Square';
+        badge.dataset.orient = orientation;
+        badge.hidden = false;
+      }
+      updateFilenamePreview(id);
+    });
+  }
+
+  /**
+   * Strip extension
+   */
+  function stripExt(filename) {
+    return filename.replace(/\.[^.]+$/, '');
+  }
+
+  /**
+   * Update output filename preview for a single item
+   */
+  function updateFilenamePreview(id) {
+    const entry = queue.get(id);
+    if (!entry) return;
+    const { id: prefix, baseName } = getNamingConfig();
+    const codec = document.getElementById('vid-codec').value;
+    const ext   = codecToExt(codec);
+    const name  = buildOutputFilename({
+      id:          prefix,
+      baseName:    baseName || stripExt(entry.file.name),
+      seq:         entry.seq,
+      orientation: entry.orientation,
+      ext,
+    });
+    const previewEl = document.getElementById(`vid-name-preview-${id}`);
+    if (previewEl) previewEl.textContent = name;
   }
 
   /**
@@ -104,12 +161,11 @@ const VideoCompressor = (() => {
     div.id = `vid-item-${id}`;
     div.setAttribute('role', 'listitem');
 
-    // Thumbnail (video icon)
+    // Thumbnail (video icon, replaced with frame later)
     const thumbDiv = document.createElement('div');
     thumbDiv.className = 'file-thumb';
     thumbDiv.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`;
 
-    // Try to generate video thumbnail
     const videoEl = document.createElement('video');
     videoEl.src = URL.createObjectURL(file);
     videoEl.muted = true;
@@ -117,8 +173,7 @@ const VideoCompressor = (() => {
     videoEl.addEventListener('loadeddata', () => {
       const c = document.createElement('canvas');
       c.width = 52; c.height = 52;
-      const ctx = c.getContext('2d');
-      ctx.drawImage(videoEl, 0, 0, 52, 52);
+      c.getContext('2d').drawImage(videoEl, 0, 0, 52, 52);
       thumbDiv.innerHTML = '';
       const tImg = document.createElement('img');
       tImg.src = c.toDataURL();
@@ -131,16 +186,33 @@ const VideoCompressor = (() => {
     const infoDiv = document.createElement('div');
     infoDiv.className = 'file-info';
     infoDiv.innerHTML = `
-      <div class="file-name" title="${file.name}">${file.name}</div>
+      <div class="file-name-row">
+        <div class="file-name" id="vid-orig-name-${id}" title="${file.name}">${file.name}</div>
+        <span class="orient-badge" id="vid-orient-${id}" hidden data-orient=""></span>
+      </div>
+      <div class="file-rename-row" id="vid-rename-row-${id}" hidden>
+        <input
+          type="text"
+          class="file-rename-input"
+          id="vid-rename-input-${id}"
+          placeholder="Nama baru (tanpa ekstensi)"
+          aria-label="Rename file ${file.name}"
+          value="${stripExt(file.name)}"
+        />
+      </div>
       <div class="file-meta">
         <span>${formatBytes(file.size)}</span>
         <span id="vid-meta-after-${id}"></span>
         <span id="vid-ratio-${id}"></span>
       </div>
+      <div class="file-output-name" id="vid-output-name-${id}">
+        <span class="output-label">Output:</span>
+        <span class="output-value" id="vid-name-preview-${id}">...</span>
+      </div>
       <div class="file-progress-wrap" id="vid-progress-wrap-${id}" style="display:none">
         <div class="file-progress-bar" id="vid-progress-${id}"></div>
       </div>
-      <div id="vid-time-${id}" style="font-size:0.7rem;color:var(--clr-text-subtle);margin-top:4px;font-family:'JetBrains Mono',monospace;"></div>
+      <div id="vid-time-${id}" class="vid-time-display"></div>
     `;
 
     // Actions
@@ -148,6 +220,9 @@ const VideoCompressor = (() => {
     actionsDiv.className = 'file-actions';
     actionsDiv.innerHTML = `
       <span class="file-status pending" id="vid-status-${id}">Menunggu</span>
+      <button class="btn-icon rename-toggle" id="vid-rename-btn-${id}" title="Rename file" aria-label="Rename ${file.name}" aria-pressed="false">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
       <button class="btn-icon download" id="vid-dl-${id}" title="Download hasil" disabled aria-label="Download ${file.name}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </button>
@@ -160,14 +235,27 @@ const VideoCompressor = (() => {
     div.appendChild(infoDiv);
     div.appendChild(actionsDiv);
 
+    // Rename toggle
+    const renameBtn   = actionsDiv.querySelector(`#vid-rename-btn-${id}`);
+    const renameRow   = infoDiv.querySelector(`#vid-rename-row-${id}`);
+    const renameInput = infoDiv.querySelector(`#vid-rename-input-${id}`);
+
+    renameBtn.addEventListener('click', () => {
+      const isOpen = !renameRow.hidden;
+      renameRow.hidden = isOpen;
+      renameBtn.setAttribute('aria-pressed', String(!isOpen));
+      renameBtn.classList.toggle('active', !isOpen);
+      if (!isOpen) renameInput.focus();
+    });
+
+    renameInput.addEventListener('input', () => updateFilenamePreview(id));
+
     // Download handler
     actionsDiv.querySelector(`#vid-dl-${id}`).addEventListener('click', () => {
       const entry = queue.get(id);
       if (entry && entry.resultBlob) {
-        const codec = document.getElementById('vid-codec').value;
-        const ext = codecToExt(codec);
-        downloadBlob(entry.resultBlob, changeExt(file.name, ext));
-        showToast(`${file.name} berhasil diunduh!`, 'success');
+        downloadBlob(entry.resultBlob, entry.outputFilename);
+        showToast(`${entry.outputFilename} berhasil diunduh!`, 'success');
       }
     });
 
@@ -176,6 +264,7 @@ const VideoCompressor = (() => {
       queue.delete(id);
       div.remove();
       updateQueueCount();
+      updateBatchDownloadBtn();
       if (queue.size === 0) document.getElementById('video-queue-section').hidden = true;
     });
 
@@ -183,102 +272,84 @@ const VideoCompressor = (() => {
   }
 
   /**
+   * Get effective base name for an item
+   */
+  function getItemBaseName(id, file) {
+    const input = document.getElementById(`vid-rename-input-${id}`);
+    const val   = input ? input.value.trim() : '';
+    return val || stripExt(file.name);
+  }
+
+  /**
    * Build FFmpeg arguments from current settings
-   * @param {string} inputName
-   * @param {string} outputName
-   * @returns {string[]}
    */
   function buildFFmpegArgs(inputName, outputName) {
-    const codec     = document.getElementById('vid-codec').value;
-    const crf       = document.getElementById('vid-crf').value;
-    const resolution= document.getElementById('vid-resolution').value;
-    const fps       = document.getElementById('vid-fps').value;
-    const audio     = document.getElementById('vid-audio').value;
-    const preset    = document.getElementById('vid-preset').value;
+    const codec      = document.getElementById('vid-codec').value;
+    const crf        = document.getElementById('vid-crf').value;
+    const resolution = document.getElementById('vid-resolution').value;
+    const fps        = document.getElementById('vid-fps').value;
+    const audio      = document.getElementById('vid-audio').value;
+    const preset     = document.getElementById('vid-preset').value;
 
     const args = ['-i', inputName];
 
-    // Video codec & CRF
     if (codec === 'libvpx-vp9') {
       args.push('-c:v', 'libvpx-vp9', '-crf', crf, '-b:v', '0');
     } else if (codec === 'libaom-av1') {
       args.push('-c:v', 'libaom-av1', '-crf', crf, '-b:v', '0', '-strict', 'experimental');
     } else {
-      // libx264 / libx265
       args.push('-c:v', codec, '-crf', crf);
       if (preset) args.push('-preset', preset);
     }
 
-    // Resolution scaling (maintain aspect ratio)
-    if (resolution) {
-      args.push('-vf', `scale=${resolution}`);
-    }
+    if (resolution) args.push('-vf', `scale=${resolution}`);
+    if (fps)        args.push('-r', fps);
 
-    // FPS
-    if (fps) {
-      args.push('-r', fps);
-    }
+    if (audio === 'strip')      args.push('-an');
+    else if (audio === 'copy')  args.push('-c:a', 'copy');
+    else if (audio === 'aac-128k') args.push('-c:a', 'aac', '-b:a', '128k');
+    else if (audio === 'aac-192k') args.push('-c:a', 'aac', '-b:a', '192k');
 
-    // Audio
-    if (audio === 'strip') {
-      args.push('-an');
-    } else if (audio === 'copy') {
-      args.push('-c:a', 'copy');
-    } else if (audio === 'aac-128k') {
-      args.push('-c:a', 'aac', '-b:a', '128k');
-    } else if (audio === 'aac-192k') {
-      args.push('-c:a', 'aac', '-b:a', '192k');
-    }
-
-    // Movflags for MP4 web streaming
-    if (outputName.endsWith('.mp4')) {
-      args.push('-movflags', '+faststart');
-    }
+    if (outputName.endsWith('.mp4')) args.push('-movflags', '+faststart');
 
     args.push(outputName);
     return args;
   }
 
   /**
-   * Compress a single video file using FFmpeg.wasm (v0.11.6)
+   * Compress a single video file using FFmpeg.wasm
    */
   async function compressVideo(id, file) {
     if (!ffmpegReady || !ffmpeg) {
       throw new Error('FFmpeg belum siap. Tunggu hingga engine selesai dimuat.');
     }
 
-    const codec = document.getElementById('vid-codec').value;
-    const ext = codecToExt(codec);
-
+    const codec      = document.getElementById('vid-codec').value;
+    const ext        = codecToExt(codec);
     const inputName  = `input_${id}.${getExt(file.name)}`;
     const outputName = `output_${id}.${ext}`;
 
-    // Write input file to FFmpeg's virtual FS
     const inputData = new Uint8Array(await file.arrayBuffer());
     ffmpeg.FS('writeFile', inputName, inputData);
 
-    // Progress tracking
     const startTime = Date.now();
     ffmpeg.setProgress(({ ratio }) => {
       if (typeof ratio === 'number' && !isNaN(ratio)) {
-        const pct = Math.min(Math.round(ratio * 100), 99);
-        setProgress(id, pct);
+        const pct     = Math.min(Math.round(ratio * 100), 99);
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+        setProgress(id, pct);
         const timeEl = document.getElementById(`vid-time-${id}`);
         if (timeEl) timeEl.textContent = `${elapsed}s — ${pct}%`;
       }
     });
 
-    // Run FFmpeg
     const args = buildFFmpegArgs(inputName, outputName);
     await ffmpeg.run(...args);
 
-    // Read output
     const outputData = ffmpeg.FS('readFile', outputName);
-    const mimeMap = { mp4: 'video/mp4', webm: 'video/webm' };
-    const blob = new Blob([outputData.buffer], { type: mimeMap[ext] || 'video/mp4' });
+    const mimeMap    = { mp4: 'video/mp4', webm: 'video/webm' };
+    const blob       = new Blob([outputData.buffer], { type: mimeMap[ext] || 'video/mp4' });
 
-    // Cleanup FFmpeg FS
     try { ffmpeg.FS('unlink', inputName); } catch (_) {}
     try { ffmpeg.FS('unlink', outputName); } catch (_) {}
 
@@ -288,7 +359,7 @@ const VideoCompressor = (() => {
   function setStatus(id, status, label) {
     const el = document.getElementById(`vid-status-${id}`);
     if (!el) return;
-    el.className = `file-status ${status}`;
+    el.className   = `file-status ${status}`;
     el.textContent = label;
   }
 
@@ -297,7 +368,7 @@ const VideoCompressor = (() => {
     const bar  = document.getElementById(`vid-progress-${id}`);
     if (!wrap || !bar) return;
     wrap.style.display = 'block';
-    bar.style.width = `${pct}%`;
+    bar.style.width    = `${pct}%`;
   }
 
   function setResult(id, originalSize, compressedSize) {
@@ -306,11 +377,11 @@ const VideoCompressor = (() => {
     if (!afterEl || !ratioEl) return;
 
     const saved = 1 - compressedSize / originalSize;
-    const pct = Math.round(saved * 100);
-    afterEl.className = 'file-size-after';
-    afterEl.textContent = `→ ${formatBytes(compressedSize)}`;
+    const pct   = Math.round(saved * 100);
+    afterEl.className   = 'file-size-after';
+    afterEl.textContent = `${formatBytes(compressedSize)}`;
 
-    ratioEl.className = `file-ratio ${pct >= 20 ? 'good' : 'ok'}`;
+    ratioEl.className   = `file-ratio ${pct >= 20 ? 'good' : 'ok'}`;
     ratioEl.textContent = `-${pct}%`;
   }
 
@@ -333,7 +404,10 @@ const VideoCompressor = (() => {
       return;
     }
 
-    // Video must process one at a time (FFmpeg.wasm is single-threaded)
+    const { id: prefix, baseName: globalBase } = getNamingConfig();
+    const codec = document.getElementById('vid-codec').value;
+    const ext   = codecToExt(codec);
+
     for (const [id, entry] of entries) {
       entry.status = 'processing';
       setStatus(id, 'processing', 'Memproses...');
@@ -342,11 +416,25 @@ const VideoCompressor = (() => {
       try {
         const blob = await compressVideo(id, entry.file);
         entry.resultBlob = blob;
-        entry.status = 'done';
+        entry.status     = 'done';
+
+        const itemBase = getItemBaseName(id, entry.file);
+        const baseName = itemBase || globalBase || stripExt(entry.file.name);
+        const filename = buildOutputFilename({
+          id:          prefix,
+          baseName,
+          seq:         entry.seq,
+          orientation: entry.orientation,
+          ext,
+        });
+        entry.outputFilename = filename;
 
         setProgress(id, 100);
         setStatus(id, 'done', 'Selesai');
         setResult(id, entry.file.size, blob.size);
+
+        const previewEl = document.getElementById(`vid-name-preview-${id}`);
+        if (previewEl) previewEl.textContent = filename;
 
         const dlBtn = document.getElementById(`vid-dl-${id}`);
         if (dlBtn) dlBtn.disabled = false;
@@ -354,13 +442,13 @@ const VideoCompressor = (() => {
         const timeEl = document.getElementById(`vid-time-${id}`);
         if (timeEl) timeEl.textContent = '';
 
-        // Stats
-        totalOriginalBytes += entry.file.size;
+        totalOriginalBytes  += entry.file.size;
         totalCompressedBytes += blob.size;
         processedCount++;
         updateStats();
+        updateBatchDownloadBtn();
 
-        showToast(`${entry.file.name} berhasil dikompres!`, 'success');
+        showToast(`${filename} siap!`, 'success');
       } catch (err) {
         entry.status = 'error';
         setStatus(id, 'error', 'Gagal');
@@ -371,6 +459,30 @@ const VideoCompressor = (() => {
     }
 
     compressBtn.disabled = false;
+  }
+
+  /**
+   * Download all completed videos at once.
+   */
+  async function downloadAll() {
+    const done = [...queue.values()].filter(e => e.status === 'done' && e.resultBlob);
+    if (done.length === 0) {
+      showToast('Belum ada video yang selesai dikompres.', 'warning');
+      return;
+    }
+    for (const entry of done) {
+      await new Promise(r => setTimeout(r, 150));
+      downloadBlob(entry.resultBlob, entry.outputFilename);
+    }
+    showToast(`${done.length} video berhasil diunduh!`, 'success');
+  }
+
+  function updateBatchDownloadBtn() {
+    const btn = document.getElementById('vid-download-all');
+    if (!btn) return;
+    const doneCount = [...queue.values()].filter(e => e.status === 'done' && e.resultBlob).length;
+    btn.disabled = doneCount === 0;
+    btn.title    = doneCount > 0 ? `Download semua (${doneCount} file)` : 'Belum ada file selesai';
   }
 
   function updateQueueCount() {
@@ -387,19 +499,27 @@ const VideoCompressor = (() => {
       : 0;
     document.getElementById('stat-files').textContent = processedCount;
     document.getElementById('stat-saved').textContent = formatBytes(saved);
-    document.getElementById('stat-ratio').textContent = `${ratio}%`;
+    document.getElementById('stat-ratio').textContent  = `${ratio}%`;
+  }
+
+  function refreshAllPreviews() {
+    for (const [id] of queue.entries()) {
+      updateFilenamePreview(id);
+    }
   }
 
   function clearAll() {
     queue.clear();
+    seqCounter = 0;
     document.getElementById('video-file-list').innerHTML = '';
     document.getElementById('video-queue-section').hidden = true;
     updateQueueCount();
+    updateBatchDownloadBtn();
   }
 
   async function retryLoad() {
     ffmpegReady = false;
-    ffmpeg = null;
+    ffmpeg      = null;
     const indicator = document.getElementById('ffmpeg-indicator');
     indicator.className = 'ffmpeg-indicator loading';
     indicator.innerHTML = `<span class="spinner"></span><span id="ffmpeg-status-text">Memuat ulang FFmpeg dari lokal...</span>`;
@@ -407,5 +527,5 @@ const VideoCompressor = (() => {
   }
 
   // Public API
-  return { loadFFmpeg, addFiles, compressAll, clearAll, retryLoad };
+  return { loadFFmpeg, addFiles, compressAll, downloadAll, clearAll, retryLoad, refreshAllPreviews };
 })();

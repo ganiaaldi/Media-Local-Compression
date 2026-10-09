@@ -24,15 +24,15 @@
   --clr-accent-glow:  rgba(200, 145, 42, 0.18);
 
   /* --- Status: desaturated film tones --- */
-  --clr-success: #5a9e6a;
-  --clr-warning: #c4903a;
-  --clr-error:   #c4584a;
-  --clr-info:    #5a8fa0;
+  --clr-success: #78bc8a;
+  --clr-warning: #d9a85a;
+  --clr-error:   #db7666;
+  --clr-info:    #76aabf;
 
   /* --- Text: warm off-white, not clinical white --- */
-  --clr-text:        #dfd8c4;
-  --clr-text-muted:  #9a8e78;
-  --clr-text-subtle: #5a5040;
+  --clr-text:        #f5f0e1;
+  --clr-text-muted:  #c2b7a3;
+  --clr-text-subtle: #968c7a;
 
   /* --- Spacing --- */
   --sp-xs: 4px;
@@ -556,7 +556,7 @@ input, select, textarea { font-family: inherit; }
   font-size: 0.68rem;
   font-weight: 600;
 }
-.file-ratio.good { background: rgba(90, 158, 106, 0.15); color: #7ec88a; border: 1px solid rgba(90, 158, 106, 0.25); }
+.file-ratio.good { background: rgba(90, 158, 106, 0.15); color: var(--clr-success); border: 1px solid rgba(90, 158, 106, 0.25); }
 .file-ratio.ok   { background: rgba(196, 144, 58, 0.15); color: var(--clr-warning); border: 1px solid rgba(196, 144, 58, 0.25); }
 
 /* Progress bar — amber, clearly visible against dark */
@@ -593,8 +593,8 @@ input, select, textarea { font-family: inherit; }
   border: 1px solid rgba(200, 145, 42, 0.25);
   animation: pulseText 1.4s ease-in-out infinite;
 }
-.file-status.done    { background: rgba(90, 158, 106, 0.12); color: #7ec88a; border: 1px solid rgba(90,158,106,0.25); }
-.file-status.error   { background: rgba(196, 88, 74, 0.12);  color: #e8907e; border: 1px solid rgba(196,88,74,0.25); }
+.file-status.done    { background: rgba(90, 158, 106, 0.12); color: var(--clr-success); border: 1px solid rgba(90,158,106,0.25); }
+.file-status.error   { background: rgba(196, 88, 74, 0.12);  color: var(--clr-error); border: 1px solid rgba(196,88,74,0.25); }
 
 /* Processing label pulse — indicates active work */
 @keyframes pulseText {
@@ -652,8 +652,8 @@ input, select, textarea { font-family: inherit; }
   color: var(--clr-text-muted);
 }
 .btn-icon:hover { border-color: rgba(200, 145, 42, 0.25); color: var(--clr-text); }
-.btn-icon.download:hover { color: #7ec88a; border-color: rgba(90, 158, 106, 0.4); }
-.btn-icon.remove:hover   { color: #e8907e; border-color: rgba(196, 88, 74, 0.4); }
+.btn-icon.download:hover { color: var(--clr-success); border-color: rgba(90, 158, 106, 0.4); }
+.btn-icon.remove:hover   { color: var(--clr-error); border-color: rgba(196, 88, 74, 0.4); }
 .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
 
 /* ---------- FFmpeg Status ---------- */
@@ -677,12 +677,12 @@ input, select, textarea { font-family: inherit; }
   background: rgba(200, 145, 42, 0.06);
 }
 .ffmpeg-indicator.ready   {
-  color: #7ec88a;
+  color: var(--clr-success);
   border-color: rgba(90, 158, 106, 0.3);
   background: rgba(90, 158, 106, 0.07);
 }
 .ffmpeg-indicator.error   {
-  color: #e8907e;
+  color: var(--clr-error);
   border-color: rgba(196, 88, 74, 0.3);
 }
 
@@ -771,10 +771,10 @@ input, select, textarea { font-family: inherit; }
 @keyframes toastOut {
   to { opacity: 0; transform: translateX(16px); }
 }
-.toast.success { border-color: rgba(90, 158, 106, 0.35); color: #7ec88a; }
-.toast.error   { border-color: rgba(196, 88, 74, 0.35);  color: #e8907e; }
+.toast.success { border-color: rgba(90, 158, 106, 0.35); color: var(--clr-success); }
+.toast.error   { border-color: rgba(196, 88, 74, 0.35);  color: var(--clr-error); }
 .toast.info    { border-color: rgba(200, 145, 42, 0.35);  color: var(--clr-accent-light); }
-.toast.warning { border-color: rgba(196, 144, 58, 0.35);  color: #d4a85a; }
+.toast.warning { border-color: rgba(196, 144, 58, 0.35);  color: var(--clr-warning); }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 640px) {
@@ -784,4 +784,110 @@ input, select, textarea { font-family: inherit; }
   .stats-banner { gap: var(--sp-lg); }
   .stat-divider { display: none; }
   .queue-header { flex-direction: column; align-items: flex-start; }
+  .naming-grid { grid-template-columns: 1fr !important; }
 }
+
+/* ---------- Naming & Orientation Extension ---------- */
+.naming-card {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-xl);
+  margin-bottom: var(--sp-lg);
+}
+.naming-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--sp-md);
+  align-items: start;
+}
+.naming-input-text {
+  width: 100%;
+  background: var(--clr-surface-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  color: var(--clr-text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.875rem;
+  transition: border-color var(--t-fast);
+}
+.naming-input-text:focus {
+  border-color: var(--clr-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--clr-accent-faint);
+}
+
+.orient-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  padding: 1px 7px;
+  border-radius: var(--r-xs);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.orient-badge[data-orient="P"] {
+  background: rgba(90, 158, 106, 0.15);
+  color: var(--clr-success);
+  border: 1px solid rgba(90, 158, 106, 0.25);
+}
+.orient-badge[data-orient="L"] {
+  background: rgba(80, 140, 200, 0.15);
+  color: var(--clr-info);
+  border: 1px solid rgba(80, 140, 200, 0.25);
+}
+.orient-badge[data-orient="S"] {
+  background: rgba(200, 145, 42, 0.15);
+  color: var(--clr-accent);
+  border: 1px solid rgba(200, 145, 42, 0.25);
+}
+
+.file-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-xs);
+}
+.file-rename-row {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+.file-rename-input {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 5px 9px;
+  background: var(--clr-surface-3);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--r-xs);
+  color: var(--clr-text);
+  font-family: 'DM Mono', monospace;
+}
+.file-rename-input:focus {
+  border-color: var(--clr-accent);
+  outline: none;
+}
+.file-output-name {
+  font-size: 0.72rem;
+  color: var(--clr-text-subtle);
+  font-family: 'DM Mono', monospace;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-output-name .output-label {
+  opacity: 0.6;
+  margin-right: 4px;
+}
+.file-output-name .output-value {
+  color: var(--clr-accent-light);
+  font-weight: 500;
+}
+.btn-icon.rename-toggle.active {
+  background: var(--clr-accent-faint);
+  border-color: var(--clr-accent-dim);
+  color: var(--clr-accent);
+}
+

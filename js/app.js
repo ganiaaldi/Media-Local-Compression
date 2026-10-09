@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupDragDrop(videoDropzone, (files) => VideoCompressor.addFiles(files));
 
   // ============================================================
-  // Action Buttons
+  // Action Buttons & Naming Listeners
   // ============================================================
   document.getElementById('img-compress-all').addEventListener('click', () => {
     ImageCompressor.compressAll();
@@ -121,6 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ImageCompressor.clearAll();
   });
 
+  document.getElementById('img-download-all').addEventListener('click', () => {
+    ImageCompressor.downloadAll();
+  });
+
   document.getElementById('vid-compress-all').addEventListener('click', () => {
     VideoCompressor.compressAll();
   });
@@ -128,6 +132,22 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('vid-clear-all').addEventListener('click', () => {
     VideoCompressor.clearAll();
   });
+
+  document.getElementById('vid-download-all').addEventListener('click', () => {
+    VideoCompressor.downloadAll();
+  });
+
+  // Live preview updates when global naming inputs change
+  ['global-name-id', 'global-name-base'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => {
+      ImageCompressor.refreshAllPreviews();
+      VideoCompressor.refreshAllPreviews();
+    });
+  });
+
+  document.getElementById('img-format')?.addEventListener('change', () => ImageCompressor.refreshAllPreviews());
+  document.getElementById('vid-codec')?.addEventListener('change', () => VideoCompressor.refreshAllPreviews());
+
 
   // ============================================================
   // Init FFmpeg (load on first video tab visit)

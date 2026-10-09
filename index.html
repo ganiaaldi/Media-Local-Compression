@@ -46,6 +46,24 @@
         <p class="hero-sub">Foto dan video dari kamera profesional dikompres langsung di browser. 100% lokal, tidak ada yang dikirim ke server.</p>
       </section>
 
+      <!-- GLOBAL NAMING CARD -->
+      <div class="naming-card">
+        <h2 class="settings-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Format Penamaan File &amp; Batch ID
+        </h2>
+        <div class="naming-grid">
+          <div class="setting-item">
+            <label for="global-name-id" class="setting-label">ID Prefix (Opsional)</label>
+            <input type="text" id="global-name-id" class="naming-input-text" placeholder="Contoh: 012" value="012" />
+          </div>
+          <div class="setting-item">
+            <label for="global-name-base" class="setting-label">Nama Dasar File (Opsional)</label>
+            <input type="text" id="global-name-base" class="naming-input-text" placeholder="Kosongkan untuk memakai nama asli file" value="Ardi" />
+          </div>
+        </div>
+      </div>
+
       <!-- IMAGE PANEL -->
       <section id="panel-image" class="tab-panel active" aria-labelledby="tab-image">
         
@@ -93,11 +111,11 @@
               <label for="img-max-width" class="setting-label">Maks. Lebar (px)</label>
               <select id="img-max-width" class="setting-select">
                 <option value="0">Original (tanpa resize)</option>
-                <option value="3840">4K — 3840px</option>
-                <option value="2560">2.5K — 2560px</option>
-                <option value="1920" selected>Full HD — 1920px</option>
-                <option value="1280">HD — 1280px</option>
-                <option value="800">Web — 800px</option>
+                <option value="3840">4K &mdash; 3840px</option>
+                <option value="2560">2.5K &mdash; 2560px</option>
+                <option value="1920" selected>Full HD &mdash; 1920px</option>
+                <option value="1280">HD &mdash; 1280px</option>
+                <option value="800">Web &mdash; 800px</option>
               </select>
             </div>
 
@@ -125,6 +143,10 @@
             <h2 class="queue-title">Antrian File <span class="queue-count badge" id="img-queue-count">0</span></h2>
             <div class="queue-actions">
               <button class="btn btn-ghost btn-sm" id="img-clear-all">Hapus Semua</button>
+              <button class="btn btn-ghost btn-sm" id="img-download-all" disabled title="Belum ada file selesai">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Semua
+              </button>
               <button class="btn btn-primary" id="img-compress-all">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 Kompres Semua
@@ -158,6 +180,8 @@
           <input type="file" id="video-input" accept="video/*" multiple hidden aria-label="Pilih file video" />
         </div>
 
+
+
         <div class="settings-card" id="video-settings">
           <h2 class="settings-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -190,10 +214,10 @@
               <label for="vid-resolution" class="setting-label">Resolusi Output</label>
               <select id="vid-resolution" class="setting-select">
                 <option value="">Original (tanpa resize)</option>
-                <option value="3840:-2">4K — 3840px lebar</option>
-                <option value="2560:-2">2.5K — 2560px lebar</option>
-                <option value="1920:-2" selected>Full HD — 1920px</option>
-                <option value="1280:-2">HD — 1280px</option>
+                <option value="3840:-2">4K &mdash; 3840px lebar</option>
+                <option value="2560:-2">2.5K &mdash; 2560px lebar</option>
+                <option value="1920:-2" selected>Full HD &mdash; 1920px</option>
+                <option value="1280:-2">HD &mdash; 1280px</option>
                 <option value="854:-2">480p</option>
               </select>
             </div>
@@ -236,6 +260,10 @@
             <h2 class="queue-title">Antrian File <span class="queue-count badge" id="vid-queue-count">0</span></h2>
             <div class="queue-actions">
               <button class="btn btn-ghost btn-sm" id="vid-clear-all">Hapus Semua</button>
+              <button class="btn btn-ghost btn-sm" id="vid-download-all" disabled title="Belum ada video selesai">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Semua
+              </button>
               <button class="btn btn-primary" id="vid-compress-all">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 Kompres Semua

@@ -101,3 +101,80 @@ function codecToExt(codec) {
   };
   return map[codec] || 'mp4';
 }
+
+/**
+ * Build output filename from naming config.
+ * Format: {ID}.{BaseName}_{seq}_{orientation}.{ext}
+ * If ID is empty, skip the "ID." prefix.
+ * If orientation is null, skip the orientation suffix.
+ *
+ * @param {object} opts
+ * @param {string} opts.id         - Optional ID prefix, e.g. "012"
+ * @param {string} opts.baseName   - Base name, e.g. "Ardi"
+ * @param {number} opts.seq        - 1-based sequence number
+ * @param {string|null} opts.orientation - "P", "L", or null
+ * @param {string} opts.ext        - File extension without dot, e.g. "webp"
+ * @returns {string}
+ */
+function buildOutputFilename({ id, baseName, seq, orientation, ext }) {
+  const seqStr = String(seq).padStart(2, '0');
+  const nameClean = (baseName || 'output').trim().replace(/\s+/g, '_');
+  const idClean   = (id || '').trim().replace(/\s+/g, '');
+
+  let stem = nameClean;
+  if (idClean) stem = `${idClean}.${nameClean}`;
+
+  stem += `_${seqStr}`;
+  if (orientation) stem += `_${orientation}`;
+
+  return `${stem}.${ext}`;
+}
+
+/**
+ * Detect image orientation from an Image element
+ * @param {HTMLImageElement} img
+ * @returns {'P'|'L'|'S'} Portrait, Landscape, or Square
+ */
+function detectImgOrientation(img) {
+  if (img.naturalWidth > img.naturalHeight) return 'L';
+  if (img.naturalHeight > img.naturalWidth) return 'P';
+  return 'S'; // Square — treat as portrait for naming
+}
+
+/**
+ * Detect video orientation from a video element
+ * @param {HTMLVideoElement} video
+ * @returns {Promise<'P'|'L'|'S'>}
+ */
+function detectVideoOrientation(video) {
+  return new Promise((resolve) => {
+    const check = () => {
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      if (w && h) {
+        if (w > h) resolve('L');
+        else if (h > w) resolve('P');
+        else resolve('S');
+      } else {
+        resolve('L'); // fallback
+      }
+    };
+    if (video.readyState >= 1) {
+      check();
+    } else {
+      video.addEventListener('loadedmetadata', check, { once: true });
+    }
+  });
+}
+
+/**
+ * Read naming config from shared UI inputs.
+ * Returns { id, baseName } from the currently active tab's naming panel.
+ * @param {'image'|'video'} type
+ * @returns {{ id: string, baseName: string }}
+ */
+function getNamingConfig() {
+  const id       = (document.getElementById('global-name-id')?.value || '').trim();
+  const baseName = (document.getElementById('global-name-base')?.value || '').trim();
+  return { id, baseName };
+}
