@@ -133,17 +133,32 @@ const VideoCompressor = (() => {
   }
 
   /**
+   * Get the effective base name for a video item.
+   * Priority: per-file rename (if changed) > global name > original filename
+   */
+  function getItemBaseName(id, file) {
+    const input        = document.getElementById(`vid-rename-input-${id}`);
+    const inputVal     = input ? input.value.trim() : '';
+    const originalBase = stripExt(file.name);
+    const { baseName: globalBase } = getNamingConfig();
+
+    if (inputVal && inputVal !== originalBase) return inputVal;
+    if (globalBase) return globalBase;
+    return originalBase;
+  }
+
+  /**
    * Update output filename preview for a single item
    */
   function updateFilenamePreview(id) {
     const entry = queue.get(id);
     if (!entry) return;
-    const { id: prefix, baseName } = getNamingConfig();
+    const { id: prefix } = getNamingConfig();
     const codec = document.getElementById('vid-codec').value;
     const ext   = codecToExt(codec);
     const name  = buildOutputFilename({
       id:          prefix,
-      baseName:    baseName || stripExt(entry.file.name),
+      baseName:    getItemBaseName(id, entry.file),
       seq:         entry.seq,
       orientation: entry.orientation,
       ext,
@@ -418,8 +433,7 @@ const VideoCompressor = (() => {
         entry.resultBlob = blob;
         entry.status     = 'done';
 
-        const itemBase = getItemBaseName(id, entry.file);
-        const baseName = itemBase || globalBase || stripExt(entry.file.name);
+        const baseName = getItemBaseName(id, entry.file);
         const filename = buildOutputFilename({
           id:          prefix,
           baseName,

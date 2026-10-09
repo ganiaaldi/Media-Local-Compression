@@ -215,12 +215,24 @@ const ImageCompressor = (() => {
   }
 
   /**
-   * Get the effective base name for an item (rename input or original name).
+   * Get the effective base name for an item.
+   * Priority:
+   *   1. Per-file rename input — only if user changed it from the original name
+   *   2. Global base name (global-name-base input)
+   *   3. Original filename (strip extension)
    */
   function getItemBaseName(id, file) {
-    const input = document.getElementById(`img-rename-input-${id}`);
-    const val   = input ? input.value.trim() : '';
-    return val || stripExt(file.name);
+    const input        = document.getElementById(`img-rename-input-${id}`);
+    const inputVal     = input ? input.value.trim() : '';
+    const originalBase = stripExt(file.name);
+    const { baseName: globalBase } = getNamingConfig();
+
+    // Per-file rename only wins if user actually changed it
+    if (inputVal && inputVal !== originalBase) return inputVal;
+    // Global name wins next
+    if (globalBase) return globalBase;
+    // Fallback to original filename
+    return originalBase;
   }
 
   /**
@@ -333,9 +345,8 @@ const ImageCompressor = (() => {
         entry.resultBlob = blob;
         entry.status     = 'done';
 
-        // Build final output filename
-        const itemBase = getItemBaseName(id, entry.file);
-        const baseName = itemBase || globalBase || stripExt(entry.file.name);
+        // Build final output filename (priority: per-file rename > global name > original)
+        const baseName = getItemBaseName(id, entry.file);
         const filename = buildOutputFilename({
           id:          prefix,
           baseName,
