@@ -1,60 +1,63 @@
-# 🗜️ MediaLite — Local Media Compressor
+# MediaLite — Local Media Compressor
 
 Aplikasi web untuk **kompresi foto & video** dari kamera profesional yang berjalan **100% lokal di browser** — tidak ada file yang dikirim ke server.
 
 ---
 
-## ✨ Fitur
+## Fitur
 
 | Fitur | Keterangan |
 |---|---|
-| 🖼️ Kompresi Gambar | JPG, PNG, WEBP, HEIC — canvas-based, cepat |
-| 🎬 Kompresi Video | MP4, MOV, MKV, AVI — berbasis FFmpeg.wasm (offline) |
-| 📏 Resize Otomatis | Atur resolusi output tanpa distorsi |
-| 🔒 100% Offline | Tidak ada upload ke server, privasi terjaga |
-| 🗂️ Batch Processing | Drag & drop banyak file sekaligus |
-| 📊 Statistik | Tampil ukuran sebelum/sesudah dan % penghematan |
-| 🏷️ Strip EXIF | Hapus metadata GPS & kamera otomatis |
-| ✏️ Penamaan Pintar | ID Prefix, Nama Dasar, & rename individual |
-| 🧭 Deteksi Orientasi| Otomatis mendeteksi Portrait (_P), Landscape (_L), & Square (_S) |
-| 📥 Batch Download | Unduh semua hasil kompresi dengan satu klik |
+| Kompresi Gambar | JPG, PNG, WEBP, HEIC — canvas-based, cepat |
+| Kompresi Video | MP4, MOV, MKV, AVI — berbasis FFmpeg.wasm (offline) |
+| Resize Otomatis | Atur resolusi output tanpa distorsi |
+| 100% Offline | Tidak ada upload ke server, privasi terjaga |
+| Batch Processing | Drag & drop banyak file sekaligus |
+| Statistik | Tampil ukuran sebelum/sesudah dan % penghematan |
+| Strip EXIF | Hapus metadata GPS & kamera otomatis |
+| Penamaan Pintar | ID Prefix, Nama Dasar, & rename individual |
+| Deteksi Orientasi | Otomatis mendeteksi Portrait (_P), Landscape (_L), & Square (_S) |
+| Batch Download | Unduh semua hasil kompresi dengan satu klik |
 
 ---
 
-## 📁 Struktur Folder
+## Struktur Folder
 
 ```
 media-compression/
-├── index.html              # Halaman utama aplikasi
+├── index.html               # Halaman utama aplikasi
 ├── css/
-│   └── style.css           # Styling & animasi
+│   └── style.css            # Styling & animasi
 ├── js/
-│   ├── app.js              # Inisialisasi & event handler utama
-│   ├── image-compressor.js # Modul kompresi gambar (Canvas API)
-│   ├── video-compressor.js # Modul kompresi video (FFmpeg.wasm)
-│   └── utils.js            # Helper functions (formatBytes, uid, dll)
-├── server.js               # Custom HTTP server (COOP/COEP headers)
+│   ├── app.js               # Inisialisasi & event handler utama
+│   ├── image-compressor.js  # Modul kompresi gambar (Canvas API)
+│   ├── video-compressor.js  # Modul kompresi video (FFmpeg.wasm)
+│   └── utils.js             # Helper functions (formatBytes, uid, dll)
+├── serve.json               # Konfigurasi header COOP/COEP untuk serve
+├── server.js                # Custom HTTP server Node.js (COOP/COEP headers)
+├── start_media_compress.bat # Script launcher Windows (otomatis buka server & browser)
 └── vendor/
-    ├── ffmpeg.js              # FFmpeg.wasm library v0.11.6
-    ├── ffmpeg-core.js         # FFmpeg core engine
-    ├── ffmpeg-core.wasm       # Binary WASM (~24 MB)
-    └── ffmpeg-core.worker.js  # Web Worker untuk FFmpeg
+    ├── 814.ffmpeg.js        # FFmpeg worker chunk
+    ├── ffmpeg.js            # FFmpeg.wasm library v0.11.6
+    ├── ffmpeg-core.js       # FFmpeg core engine
+    ├── ffmpeg-core.wasm     # Binary WASM (~24 MB)
+    └── ffmpeg-core.worker.js # Web Worker untuk FFmpeg
 ```
 
 ---
 
-## 🚀 Cara Menjalankan
+## Cara Menjalankan
 
 > **Penting:** Aplikasi **harus** dijalankan melalui HTTP server karena FFmpeg.wasm tidak bisa memuat file `.wasm` dari `file://` protocol.
-> Selain itu, FFmpeg.wasm membutuhkan header **COOP/COEP** agar `SharedArrayBuffer` tersedia di browser.
+> Selain itu, FFmpeg.wasm membutuhkan header **COOP/COEP** (`Cross-Origin-Opener-Policy` dan `Cross-Origin-Embedder-Policy`) agar `SharedArrayBuffer` tersedia di browser.
 
-### Opsi 1 — Menggunakan `start.bat` (Direkomendasikan & Paling Mudah)
+### Opsi 1 — Menggunakan start_media_compress.bat (Paling Mudah di Windows)
 
-Untuk pengguna Windows, cukup double-click (klik ganda) file **`start.bat`** di dalam folder `media-compression`. Script ini akan otomatis mengecek instalasi Node.js, menjalankan server, dan membuka browser Anda ke alamat aplikasi.
+Untuk pengguna Windows, cukup klik ganda file **`start_media_compress.bat`** di dalam folder aplikasi. Script ini akan otomatis mengecek instalasi Node.js, menjalankan server lokal, dan membuka browser Anda ke alamat aplikasi.
 
-### Opsi 2 — Menggunakan `node server.js` (Manual Terminal)
+### Opsi 2 — Menggunakan node server.js (Manual Terminal)
 
-Sudah disertakan dalam package — pastikan Anda memiliki Node.js terinstall:
+Sudah disertakan dalam package — pastikan Node.js terpasang di sistem Anda:
 
 ```bash
 node server.js
@@ -66,9 +69,17 @@ Kemudian buka browser dan akses:
 http://localhost:8787
 ```
 
-> Server ini otomatis menambahkan header `Cross-Origin-Opener-Policy` dan `Cross-Origin-Embedder-Policy` yang diperlukan FFmpeg.wasm.
+> Server bawaan ini otomatis menambahkan header `Cross-Origin-Opener-Policy: same-origin` dan `Cross-Origin-Embedder-Policy: require-corp` yang diperlukan FFmpeg.wasm.
 
-### Opsi 2 — Menggunakan Python
+### Opsi 3 — Menggunakan npx serve
+
+Gunakan konfigurasi `serve.json` yang sudah tersedia:
+
+```bash
+npx serve .
+```
+
+### Opsi 4 — Menggunakan Python
 
 ```bash
 # Python 3
@@ -80,22 +91,15 @@ python -m SimpleHTTPServer 8787
 
 Buka: `http://localhost:8787`
 
-### Opsi 3 — Menggunakan VS Code Extension
+> Catatan: Server Python bawaan standar tidak menyertakan header COOP/COEP secara default, sehingga kompresi video berbasis FFmpeg.wasm membutuhkan penambahan header tersebut agar dapat berjalan.
+
+### Opsi 5 — Menggunakan VS Code Live Server
 
 Install ekstensi **Live Server** di VS Code, kemudian klik kanan `index.html` → **Open with Live Server**.
 
-### Opsi 4 — Menggunakan Node.js `http-server`
-
-```bash
-npm install -g http-server
-http-server . -p 8787
-```
-
-Buka: `http://localhost:8787`
-
 ---
 
-## 🖼️ Kompresi Gambar — Cara Penggunaan
+## Kompresi Gambar — Cara Penggunaan
 
 1. Pastikan tab **Image** aktif (default saat pertama buka)
 2. Atur **ID Prefix** dan **Nama Dasar** secara global di bagian atas halaman (Opsional)
@@ -103,19 +107,19 @@ Buka: `http://localhost:8787`
 4. Format yang didukung: `JPG`, `PNG`, `WEBP`, `HEIC`
 5. Atur pengaturan kompresi:
    - **Format Output**: WebP (terkecil), JPEG, atau PNG (lossless)
-   - **Kualitas**: Geser slider (10–100%). Rekomendasikan 75–85% untuk web
+   - **Kualitas**: Geser slider (10–100%). Rekomendasi 75–85% untuk web
    - **Maks. Lebar**: Resize otomatis menjaga aspek rasio (default: Full HD 1920px)
    - **Hapus EXIF**: Hapus metadata GPS & kamera untuk privasi
    - **Progressive Loading**: File JPEG dimuat bertahap di browser
 6. Klik **Kompres Semua**
-7. Klik ikon **Download** (⬇️) di setiap file, atau gunakan tombol **Download Semua** jika ingin mengunduh semua sekaligus.
+7. Klik tombol **Download** di setiap file, atau gunakan tombol **Download Semua** jika ingin mengunduh semua file sekaligus.
 
 ---
 
-## 🎬 Kompresi Video — Cara Penggunaan
+## Kompresi Video — Cara Penggunaan
 
 1. Klik tab **Video** di header
-2. Tunggu status FFmpeg berubah menjadi **hijau**: *"FFmpeg siap — kompresi video tersedia (100% offline)"*
+2. Tunggu status FFmpeg berubah menjadi hijau: *"FFmpeg siap — kompresi video tersedia (100% offline)"*
    - Proses loading pertama membutuhkan beberapa detik untuk mengompilasi WASM
    - Loading hanya dilakukan sekali per sesi browser
 3. Drag & drop file video ke area dropzone, atau klik untuk memilih file
@@ -133,11 +137,11 @@ Buka: `http://localhost:8787`
 
 6. Klik **Kompres Semua**
 7. Kompresi berjalan **satu per satu** (FFmpeg.wasm single-threaded)
-8. Setelah selesai, klik ikon **Download** (⬇️) untuk mengunduh hasil secara individual, atau tombol **Download Semua** untuk mengunduh sekaligus.
+8. Setelah selesai, klik tombol **Download** untuk mengunduh hasil secara individual, atau tombol **Download Semua** untuk mengunduh sekaligus.
 
 ---
 
-## 🏷️ Penamaan Pintar & Deteksi Orientasi
+## Penamaan Pintar & Deteksi Orientasi
 
 Aplikasi ini menyertakan sistem penamaan otomatis yang memudahkan kategorisasi media:
 - Tentukan **ID Prefix** (contoh: `012`) dan **Nama Dasar** (contoh: `Ardi`) pada kolom pengaturan di atas area dropzone. Pengaturan ini bersifat global (berlaku untuk gambar dan video).
@@ -145,20 +149,20 @@ Aplikasi ini menyertakan sistem penamaan otomatis yang memudahkan kategorisasi m
   - **_P** : Portrait (Vertikal)
   - **_L** : Landscape (Horizontal)
   - **_S** : Square (Persegi / Kotak)
-- **Rename Individual:** Anda bisa menekan tombol pensil di daftar antrean untuk mengganti nama dasar file tersebut secara manual tanpa harus mengubah file lainnya.
+- **Rename Individual:** Anda bisa menekan tombol ubah nama di daftar antrean untuk mengganti nama dasar file tersebut secara manual tanpa harus mengubah file lainnya.
 
 Contoh output: `012. Ardi_01_P.webp`, `012. Ardi_02_L.mp4`.
 
 ---
 
-## ⚙️ Rekomendasi Pengaturan
+## Rekomendasi Pengaturan
 
 ### Foto Kamera (untuk Web/CMS)
 ```
-Format    : WebP
-Kualitas  : 82%
-Maks. Lebar: Full HD — 1920px
-Hapus EXIF: ✅ Ya
+Format      : WebP
+Kualitas    : 82%
+Maks. Lebar : Full HD — 1920px
+Hapus EXIF  : Ya
 ```
 Hasil tipikal: File 8MB → 300–600KB (penghematan ~90%)
 
@@ -185,7 +189,7 @@ Preset    : Slow
 
 ---
 
-## ❗ Troubleshooting
+## Troubleshooting
 
 ### FFmpeg gagal memuat / stuck loading
 - Pastikan server lokal sudah berjalan (lihat bagian **Cara Menjalankan** di atas)
@@ -204,7 +208,7 @@ Preset    : Slow
 
 ---
 
-## 🔧 Teknologi yang Digunakan
+## Teknologi yang Digunakan
 
 | Komponen | Teknologi |
 |---|---|
@@ -212,10 +216,10 @@ Preset    : Slow
 | Kompresi Gambar | Canvas API, `canvas.toBlob()` |
 | Kompresi Video | [FFmpeg.wasm v0.11.6](https://github.com/ffmpegwasm/ffmpeg.wasm) |
 | Font | Inter, JetBrains Mono (Google Fonts) |
-| Server (dev) | `npx serve` |
+| Server Lokal | Node.js HTTP Server (`server.js`) / `npx serve` |
 
 ---
 
-## 📝 Lisensi
+## Lisensi
 
 Proyek ini untuk penggunaan pribadi/internal. FFmpeg tunduk pada lisensi LGPL v2.1.

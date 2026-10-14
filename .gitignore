@@ -1,0 +1,10 @@
+# Antislop & Agent Configuration
+AGENTS.md
+.agents/
+
+# Dependencies & Environment
+node_modules/
+
+# OS Metadata
+.DS_Store
+Thumbs.db
